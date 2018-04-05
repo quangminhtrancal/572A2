@@ -1,0 +1,239 @@
+package GUI;
+
+import java.awt.Button;
+import java.awt.Dimension;
+import java.awt.FileDialog;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Map;
+
+import javax.swing.BoxLayout;
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.TableColumn;
+
+import GUI.MainFrame.MetricType;
+import analysis.MetricFinder;
+import data.GraphNode;
+import data.NodeMetric;
+
+public class ReportPanel extends JPanel{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	JScrollPane scrollPane;
+	JTable reportTable;
+	MetricType metric;
+	MainFrame mainFrame;
+	MetricFinder metricFinder;
+	
+	public void repaint()
+	{
+		super.repaint();
+	}
+	
+	ReportPanel(MetricType x, MetricFinder mf, MainFrame mFrame)
+	{
+		this.metric = x;
+		this.metricFinder = mf;
+		this.mainFrame = mFrame;	
+	}
+	
+	
+	public void printMetricReport(NodeMetric[] results)
+	{
+		BoxLayout x = new BoxLayout(this, BoxLayout.Y_AXIS);
+		this.removeAll();
+		this.setLayout(x);
+		printTable(results);
+		paintButtons();
+	}
+	
+	//This method creates and displays a table for the results
+	public void printTable(NodeMetric[] results)
+	{
+		String[] headers = {"Node Name", "Score"};
+		String[][] tableData = new String[results.length][2];
+		for(int j = 0; j < results.length; j++)
+		{
+			tableData[j][0] = results[j].getNodeName();
+			tableData[j][1] = ""+round(results[j].getMetricValue(), 6);
+		}
+		reportTable = new JTable(tableData, headers);
+		reportTable.setLayout(null);
+		
+		scrollPane = new JScrollPane(reportTable);
+	
+		TableColumn col = reportTable.getColumnModel().getColumn(0);
+		int width = 70;
+		col.setPreferredWidth(width);
+		col = reportTable.getColumnModel().getColumn(1);
+		col.setPreferredWidth(width);
+		
+		reportTable.setEnabled(false);
+		scrollPane.setBounds(5, 5, 250, 300);
+		this.add(scrollPane);
+		scrollPane.getViewport().setPreferredSize(new Dimension(250, 300));
+	}
+	
+	//This method rounds the number to 6 number of digits after the decimal point
+	private double round(double num, int precision)
+	{
+		double y = Math.pow(10, precision);
+		num = num * y;
+	    int x  = (int)num;
+	    return x / y;
+	}
+	
+	private void paintButtons()
+	{
+		Button visualizeBtn = new Button("Visualize results");
+		visualizeBtn.setFont(new Font("Tahoma", Font.BOLD, 12));
+		this.add(visualizeBtn);
+		visualizeBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				if (ReportPanel.this.metric == MetricType.STRUCT_EQ)
+					ReportPanel.this.mainFrame.netPanel.netGraph.groupNodes(metricFinder.groups);
+				else
+					ReportPanel.this.mainFrame.netPanel.netGraph.rankMetric(metricFinder.ranks);
+				ReportPanel.this.mainFrame.netPanel.netPnl.revalidate();
+				ReportPanel.this.mainFrame.netPanel.netPnl.repaint();
+			}
+		});
+		
+		Button saveBtn = new Button("Save report");
+		saveBtn.setFont(new Font("Tahoma", Font.BOLD, 12));
+		this.add(saveBtn);
+		saveBtn.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				ReportPanel.this.saveResults();
+			}
+		});
+	}
+	
+	public void printEquivalentsReport(Map<String, GraphNode[]> results, int vertexCount)
+	{
+		BoxLayout x = new BoxLayout(this, BoxLayout.Y_AXIS);
+		this.setLayout(x);
+				
+		String[] headers = {"Group Number", "Node Names"};
+		String[][] tableData = new String[vertexCount + 2*results.size()][2];
+
+		int i = 0;
+		for(String groupNum : results.keySet())
+		{
+			tableData[i][0] = groupNum + ":";
+			tableData[i++][1] = "";
+			for(int j = 0; j < results.get(groupNum).length; j++)
+			{
+				tableData[i][0] = "";
+				tableData[i++][1] = results.get(groupNum)[j].getLabel();
+			}
+			tableData[i][0] = "";
+			tableData[i++][1] = "";
+		}
+		
+		reportTable = new JTable(tableData, headers);
+		reportTable.setLayout(null);
+		
+		scrollPane = new JScrollPane(reportTable);
+	
+		TableColumn col = reportTable.getColumnModel().getColumn(0);
+		col.setPreferredWidth(60);
+		col = reportTable.getColumnModel().getColumn(1);
+		col.setPreferredWidth(110);
+		
+		reportTable.setEnabled(false);
+		scrollPane.setBounds(5, 5, 220, 300);
+		this.add(scrollPane);
+		scrollPane.getViewport().setPreferredSize(new Dimension(220, 300));
+		
+		paintButtons();
+	}
+	
+	public void printDensityReport(double density)
+	{
+		BoxLayout x = new BoxLayout(this, BoxLayout.Y_AXIS);
+		this.setLayout(x);
+		
+		String[] headers = {"Metric", "Value"};
+		String[][] tableData = new String[1][2];
+
+		tableData[0][0] = "Graph Density";
+		tableData[0][1] = round(density,8) + "";
+		
+		reportTable = new JTable(tableData, headers);
+		reportTable.setLayout(null);
+		
+		scrollPane = new JScrollPane(reportTable);
+	
+		TableColumn col = reportTable.getColumnModel().getColumn(0);
+		col.setPreferredWidth(60);
+		col = reportTable.getColumnModel().getColumn(1);
+		col.setPreferredWidth(110);
+		
+		reportTable.setEnabled(false);
+		scrollPane.setBounds(5, 5, 220, 300);
+		this.add(scrollPane);
+		scrollPane.getViewport().setPreferredSize(new Dimension(220, 300));
+		
+		paintButtons();
+	}
+	
+	public void saveResults()
+	{
+		JFrame frame = new JFrame("Save as");
+		FileDialog fd = new FileDialog(frame , "Save as",FileDialog.SAVE);
+		fd.setEnabled(true);
+		fd.setVisible(true);
+		fd.setAlwaysOnTop(true);
+		 
+		String path = fd.getDirectory();
+		if (fd.getDirectory() == null || fd.getFile() == null)
+			return;
+		path = fd.getDirectory()+ "/"+fd.getFile();
+		if(!path.endsWith(".csv"))
+			path += ".csv";
+		
+		String line = this.metric + ", \n \n";
+		line += reportTable.getModel().getColumnName(0) + ", " + reportTable.getModel().getColumnName(1) + "\n";
+		
+		FileWriter fw = null;
+		try {
+			fw = new FileWriter(new File(path));
+			fw.append(line);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		for(int i = 0; i < reportTable.getModel().getRowCount(); i++)
+		{
+			line = (String)reportTable.getModel().getValueAt(i, 0);
+			line += ", ";
+			line += (String)reportTable.getModel().getValueAt(i, 1);
+			line += ", \n";
+			try {
+				fw.append(line);
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		try {
+			fw.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+}

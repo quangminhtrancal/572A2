@@ -1,0 +1,13 @@
+02.0
+-1.0.6666666666666666
+-2.0.0
+-3.2.0
+-4.2.0
+1.2.0
+2.0.6666666666666666 0.6666666666666666
+
+initial value of r: 0.6666666666666666
+initial value of FROM: 0.0
+initial value of TO counter -1 : 1.3333333333333333
+initial value of R counter -1 : 0.6666666666666666
+updated value of FROM: 0.0

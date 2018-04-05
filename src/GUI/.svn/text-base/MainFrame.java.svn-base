@@ -1,0 +1,617 @@
+package GUI;
+
+import java.awt.Component;
+import java.awt.Menu;
+import java.awt.MenuBar;
+import java.awt.MenuItem;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
+import analysis.CliqueFinder;
+import analysis.NetworkConstructor;
+import data.Dataset;
+
+// This class is the main window of the program. It extends JFrame. There's always one instance of this class available while the program is running.
+public class MainFrame extends JFrame {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	NetworkPanel netPanel;
+	Dataset rawData;
+	StatusBar statusBar;
+	ArrayList<Menu> menus = new ArrayList<Menu>();
+	
+	//Shermin: Added two new metrictypes: authority and hub
+	enum MetricType
+	{
+		BETWEENNESS, CLOSENESS, DEGREE, EIGENVECTOR, CLUSTERING_COEF, STRUCT_EQ, DENSITY,AUTHORITY, HUB
+	}
+
+	public static void main(String[] args) {
+		new MainFrame();
+	}
+
+	public void setNetPanel(NetworkPanel net)
+	{
+		this.netPanel = net;
+	}
+	
+	
+	MainFrame() {
+		this.setTitle("NetDriller");
+		this.setSize(990, 710);
+		this.setLocation(100, 100);
+		this.setBounds(100, 100, 990, 710);
+
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		this.setVisible(true);
+
+		this.setLayout(null);
+		WelcomePanel wp = new WelcomePanel();
+		wp.setBounds(300, 100, 500, 400);
+		this.setResizable(false);
+		this.add(wp);
+
+		initMenues();
+		toggleNetworkMenus();
+		toggleConstructionMenus();
+		statusBar = new StatusBar(this);
+		statusBar.setText("No network imported                No raw dataset imported");
+		statusBar.revalidate();
+		statusBar.repaint();
+		this.repaint();
+	}
+	
+	public void reset()
+	{
+		Component[] cmpn = this.getContentPane().getComponents();
+		for(int i = 0; i < cmpn.length; i++)
+			this.remove(cmpn[i]);
+		
+		WelcomePanel wp = new WelcomePanel();
+		wp.setBounds(300, 100, 500, 400);
+		this.setResizable(false);
+		this.add(wp);
+		wp.revalidate();
+		wp.repaint();
+		this.repaint();
+
+		initMenues();
+		statusBar = new StatusBar(this);
+		statusBar.setText("No network imported                No raw dataset imported");
+		statusBar.revalidate();
+		statusBar.repaint();
+		this.repaint();
+	}
+
+	public void toggleNetworkMenus()
+	{
+		for(int i = 0; i < menus.size(); i++)
+			if(!menus.get(i).getLabel().equals("Network Construction") && !menus.get(i).getLabel().equals("Data"))
+				menus.get(i).setEnabled(!menus.get(i).isEnabled());
+	}
+	
+	public void toggleConstructionMenus()
+	{
+		for(int i = 0; i < menus.size(); i++)
+			if(menus.get(i).getLabel().equals("Network Construction"))
+				menus.get(i).setEnabled(!menus.get(i).isEnabled());
+	}
+	//This method initializes the main menus
+	public void initMenues() {
+		MenuBar menuBar = new MenuBar();
+		this.setMenuBar(menuBar);
+
+		{
+			Menu dataMenu = new Menu("Data");
+			menuBar.add(dataMenu);
+			initDataMenu(dataMenu);
+			menus.add(dataMenu);
+		}
+		
+		{
+			Menu constructionMenu = new Menu("Network Construction");
+			menuBar.add(constructionMenu);
+			initConstructionMenu(constructionMenu);
+			menus.add(constructionMenu);
+		}
+
+		{
+			Menu metricMenu = new Menu("Metrics");
+			menuBar.add(metricMenu);
+			initMetricMenur(metricMenu);
+			menus.add(metricMenu);
+		}
+
+		{
+			Menu analysisMenu = new Menu("Analysis");
+			menuBar.add(analysisMenu);
+			initAnalysisMenu(analysisMenu);
+			menus.add(analysisMenu);
+		}
+
+		{
+			Menu clusteringMenu = new Menu("Network Clustering");
+			menuBar.add(clusteringMenu);
+			initClusteringMenu(clusteringMenu);
+			menus.add(clusteringMenu);
+		}
+
+		{
+			Menu searchMenu = new Menu("Search");
+			menuBar.add(searchMenu);
+			initSearchMenu(searchMenu);
+			menus.add(searchMenu);
+		}
+
+//		{
+//			Menu dynamicMenu = new Menu("Dynamic Network");
+//			menuBar.add(dynamicMenu);
+//		}
+	}
+
+	//This method initializes the items of "Data" menu and sets their actionListeners.
+	public void initDataMenu(Menu dataMenu) {
+		{
+			MenuItem importItem = new MenuItem("Import A Network         ");
+			dataMenu.add(importItem);
+			importItem.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					boolean firstNetwork = true;
+					JFrame jf = new JFrame("Import a Network");
+					jf.setBounds(200, 200, 370, 350);
+					jf.setAlwaysOnTop(true);
+					if(netPanel != null && netPanel.netGraph != null)
+						firstNetwork = false;
+					netPanel = new NetworkPanel(MainFrame.this);
+					NetworkImportPanel dip = new NetworkImportPanel(netPanel, jf, firstNetwork);
+					jf.setVisible(true);
+					jf.setSize(370, 350);
+					jf.add(dip);
+				}
+			});
+		}
+//		{
+//			MenuItem timestampItem = new MenuItem("Import Timestamps");
+//			dataMenu.add(timestampItem);
+//		}
+
+		{
+			MenuItem rawDataItem = new MenuItem("Import Raw Dataset");
+			dataMenu.add(rawDataItem);
+			rawDataItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					new DataImportFrame(MainFrame.this).init();
+				}
+			});
+		}
+
+		{
+			// dataMenu.add(new JSeparator());
+			dataMenu.addSeparator();
+			MenuItem exitItem = new MenuItem("Exit");
+			dataMenu.add(exitItem);
+			exitItem.addActionListener(new ActionListener() {
+
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					// TODO Auto-generated method stub
+					MainFrame.this.dispose();
+					new StatusBar(MainFrame.this).setText("Raw dataset imported");
+				}
+			});
+		}
+	}
+
+	public void initConstructionMenu(Menu constructMenu)
+	{
+		{
+			Menu frequentItemsets = new Menu("Based On Frequent Item Set  ");
+			constructMenu.add(frequentItemsets);
+			{
+				MenuItem frequentItem = new MenuItem("Network of frequent links");
+				frequentItemsets.add(frequentItem);
+				frequentItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if(rawData != null)
+						{
+							netPanel = new NetworkPanel(MainFrame.this);
+							netPanel.netGraph = new NetworkConstructor().frequentMiner(rawData);
+							netPanel.loadGraph();
+							netPanel.revalidate();
+							netPanel.repaint();
+							toggleNetworkMenus();
+						}
+					}
+				});
+			}
+			{
+				MenuItem closedFrequentItem = new MenuItem("Network of maximal frequent links");
+				frequentItemsets.add(closedFrequentItem);
+				closedFrequentItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if(rawData != null)
+						{
+							netPanel = new NetworkPanel(MainFrame.this);
+							netPanel.netGraph = new NetworkConstructor().frequentMaximalMiner(rawData);
+							netPanel.loadGraph();
+							netPanel.revalidate();
+							netPanel.repaint();
+							toggleNetworkMenus();
+						}
+					}
+				});
+			}
+			{
+				MenuItem maximalFrequentItem = new MenuItem("Network of closed frequent links");
+				frequentItemsets.add(maximalFrequentItem);
+				frequentItemsets.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if(rawData != null)
+						{
+							netPanel = new NetworkPanel(MainFrame.this);
+							netPanel.netGraph = new NetworkConstructor().frequentClosedMiner(rawData);
+							netPanel.loadGraph();
+							netPanel.revalidate();
+							netPanel.repaint();
+							toggleNetworkMenus();
+						}
+					}
+				});
+			}
+		}
+		{
+			MenuItem kmeansItem = new MenuItem("Based On K-means Clustering");
+			constructMenu.add(kmeansItem);
+			kmeansItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent arg0) {
+					if(rawData != null)
+					{
+						netPanel = new NetworkPanel(MainFrame.this);
+						netPanel.netGraph = new NetworkConstructor().kmeansClustering(rawData);
+						netPanel.loadGraph();
+						netPanel.revalidate();
+						netPanel.repaint();
+						toggleNetworkMenus();
+					}
+				}
+			});
+		}
+	}
+	
+	
+	//This method initializes the items of "Metric" menu and sets their actionListeners.
+	public void initMetricMenur(Menu metricMenu) {
+		{
+			Menu centralityMeasuresItem = new Menu("Centrality Measures    ");
+			metricMenu.add(centralityMeasuresItem);
+
+			{
+				MenuItem betweennessItem = new MenuItem("Betweenness");
+				centralityMeasuresItem.add(betweennessItem);
+				betweennessItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+//						MainFrame.this.netPanel.reportPanel = new JPanel();
+						MainFrame.this.netPanel.calculateMetric(MetricType.BETWEENNESS);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+
+			{
+				MenuItem closenessItem = new MenuItem("Closeness");
+				centralityMeasuresItem.add(closenessItem);
+				closenessItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+//						MainFrame.this.netPanel.reportPanel = new JPanel();
+						MainFrame.this.netPanel.calculateMetric(MetricType.CLOSENESS);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+
+			{
+				MenuItem degreeItem = new MenuItem("Degree");
+				centralityMeasuresItem.add(degreeItem);
+				degreeItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						MainFrame.this.netPanel.calculateMetric(MetricType.DEGREE);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+
+			{
+				MenuItem eigenvectorItem = new MenuItem("Eigenvector");
+				centralityMeasuresItem.add(eigenvectorItem);
+				eigenvectorItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						MainFrame.this.netPanel.calculateMetric(MetricType.EIGENVECTOR);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+			//Shermin: Added a new menu item for authority
+			{
+				MenuItem authorityItem = new MenuItem("Authority");
+				centralityMeasuresItem.add(authorityItem);
+				authorityItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+//						MainFrame.this.netPanel.reportPanel = new JPanel();
+						MainFrame.this.netPanel.calculateMetric(MetricType.AUTHORITY);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+			//Shermin: Added a new menu item for hub
+			{
+				MenuItem authorityItem = new MenuItem("Hub");
+				centralityMeasuresItem.add(authorityItem);
+				authorityItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+//						MainFrame.this.netPanel.reportPanel = new JPanel();
+						MainFrame.this.netPanel.calculateMetric(MetricType.HUB);
+						MainFrame.this.netPanel.revalidate();
+						MainFrame.this.netPanel.repaint();
+					}
+				});
+			}
+		}
+
+		{
+			MenuItem clusteringItem = new MenuItem("Clustering Coefficient");
+			metricMenu.add(clusteringItem);
+			clusteringItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.calculateMetric(MetricType.CLUSTERING_COEF);
+					MainFrame.this.netPanel.revalidate();
+					MainFrame.this.netPanel.repaint();
+				}
+			});
+		}
+
+		{
+			MenuItem equivalentItem = new MenuItem("Structurally Equivalent");
+			metricMenu.add(equivalentItem);
+			equivalentItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.findStructurallyEquivalents();
+					MainFrame.this.netPanel.revalidate();
+					MainFrame.this.netPanel.repaint();
+				}
+			});
+		}
+
+		{
+			MenuItem densityItem = new MenuItem("Graph Density");
+			metricMenu.add(densityItem);
+			densityItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.calculateDensity();
+					MainFrame.this.netPanel.revalidate();
+					MainFrame.this.netPanel.repaint();
+				}
+			});
+		}
+	}
+	
+	//This method initializes the items of "Analysis" menu and sets their actionListeners.
+	public void initAnalysisMenu(Menu analysisMenu) {
+		{
+			MenuItem shortestPathItem = new MenuItem("Find Shortest Paths");
+			analysisMenu.add(shortestPathItem);
+			shortestPathItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					new ShortestPathFrame(MainFrame.this);
+				}
+			});
+		}
+
+		{
+			MenuItem bridgeItem = new MenuItem("Find Bridges");
+			analysisMenu.add(bridgeItem);
+			bridgeItem.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if(MainFrame.this.netPanel != null && MainFrame.this.netPanel.netGraph != null)
+						new BridgeFrame(MainFrame.this.netPanel.netGraph).showResults();
+				}
+			});
+		}
+
+		{
+			MenuItem cliqueItem = new MenuItem("Find Cliques");
+			analysisMenu.add(cliqueItem);
+			cliqueItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					new CliqueFinder().find_cliques_pivot(MainFrame.this.netPanel.netGraph.getGraph());
+					netPanel.netPnl.revalidate();
+					netPanel.netPnl.repaint();
+				}
+			});
+		}
+
+		{
+			Menu foldItem = new Menu("Fold 2-mode to 1-mode   ");
+			analysisMenu.add(foldItem);
+			{
+				MenuItem rowFoldItem = new MenuItem("By Row");
+				foldItem.add(rowFoldItem);
+				rowFoldItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						if(netPanel.netGraph.getNetwork().getMode() != 2)
+						{
+							JOptionPane.showMessageDialog(MainFrame.this,
+								    "Folding can be applied on two-mode networks.",
+								    "Operation cannot be done",
+								    JOptionPane.ERROR_MESSAGE);
+						}
+						else
+							new FoldFrame().foldNetwork(MainFrame.this.netPanel.netGraph, true);
+					}
+				});
+			}
+
+			{
+				MenuItem columnFoldItem = new MenuItem("By Column   ");
+				foldItem.add(columnFoldItem);
+				columnFoldItem.addActionListener(new ActionListener() {
+					@Override
+					public void actionPerformed(ActionEvent e) {
+						new FoldFrame().foldNetwork(MainFrame.this.netPanel.netGraph, false);
+					}
+				});
+			}
+		}
+
+		{
+			MenuItem showMatrixItem = new MenuItem("Show Matrix");
+			analysisMenu.add(showMatrixItem);
+			showMatrixItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					if(MainFrame.this.netPanel != null && MainFrame.this.netPanel.netGraph != null)
+						new ShowMatrixFrame().showMatrix(MainFrame.this.netPanel.netGraph);
+					else
+						System.out.println("ooo"); //Dialog to give an error..... (for all other items as well!)
+				}
+			});
+		}
+		
+		{
+			MenuItem invertItem = new MenuItem("Invert Network");
+			analysisMenu.add(invertItem);
+			invertItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					new InverseMatrixFrame().findInverse(MainFrame.this.netPanel.netGraph);
+				}
+			});
+		}
+		
+		{
+			MenuItem complementItem = new MenuItem("Complement Network");
+			analysisMenu.add(complementItem);
+			complementItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					new ComplementGraphFrame().findComplement(MainFrame.this.netPanel.netGraph);
+				}
+			});
+		}
+	}
+
+	
+	//This method initializes the items of "Clustering" menu and sets their actionListeners.
+	public void initClusteringMenu(Menu clusteringMenu) {
+		{
+			MenuItem modularityItem = new MenuItem("Modularity");
+			clusteringMenu.add(modularityItem);
+			modularityItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.cluster(1);
+				}
+			});
+		}
+
+		{
+			MenuItem betweennessItem = new MenuItem("Edge Betweenness   ");
+			clusteringMenu.add(betweennessItem);
+			betweennessItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.cluster(2);
+				}
+			}); 
+		}
+
+		{
+			MenuItem voltageItem = new MenuItem("Voltage");
+			clusteringMenu.add(voltageItem);
+			voltageItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.cluster(3);
+				}
+			});
+		}
+
+		{
+			MenuItem MSTItem = new MenuItem("Minimum Spanning Tree");
+			clusteringMenu.add(MSTItem);
+			MSTItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					// TODO Auto-generated method stub
+					MainFrame.this.netPanel.cluster(4);
+				}
+			});
+		}
+
+	}
+
+	//This method initializes the items of "Search" menu and sets their actionListeners.
+	public void initSearchMenu(Menu searchMenu) {
+		{
+			MenuItem searchMetricItem = new MenuItem(
+					"Search by Network Metrics");
+			searchMenu.add(searchMetricItem);
+			searchMetricItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					MainFrame.this.netPanel.searchMetrics();
+					MainFrame.this.netPanel.revalidate();
+					MainFrame.this.netPanel.repaint();
+				}
+			});
+		}
+
+		{
+			MenuItem fuzzySearchItem = new MenuItem("Fuzzy Search");
+			searchMenu.add(fuzzySearchItem);
+			fuzzySearchItem.addActionListener(new ActionListener() {
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					new FuzzySearchFrame(MainFrame.this);
+					MainFrame.this.netPanel.netPnl.revalidate();
+					MainFrame.this.netPanel.netPnl.repaint();
+				}
+			});
+		}
+	}
+
+}
+

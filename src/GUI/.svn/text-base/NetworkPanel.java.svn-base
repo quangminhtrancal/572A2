@@ -1,0 +1,439 @@
+package GUI;
+
+import java.awt.Button;
+import java.awt.Choice;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Dimension;
+import java.awt.Paint;
+import java.awt.TextField;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.border.Border;
+import javax.swing.border.TitledBorder;
+
+import org.apache.commons.collections15.Transformer;
+
+import GUI.MainFrame.MetricType;
+import analysis.MetricFinder;
+import clustering.CommunityDetection;
+import data.GraphEdge;
+import data.GraphNode;
+import data.NetworkGraph;
+import edu.uci.ics.jung.algorithms.layout.CircleLayout;
+import edu.uci.ics.jung.visualization.VisualizationViewer;
+import edu.uci.ics.jung.visualization.control.CrossoverScalingControl;
+import edu.uci.ics.jung.visualization.control.DefaultModalGraphMouse;
+import edu.uci.ics.jung.visualization.control.ModalGraphMouse;
+import edu.uci.ics.jung.visualization.control.ScalingControl;
+import edu.uci.ics.jung.visualization.decorators.ToStringLabeller;
+
+//This class is the panel for displaying networks and their options. 
+//It has three different panels inside: one for visualizing the network, one for controls like zooming, and one for displaying different reports about the network. 
+public class NetworkPanel extends JPanel {
+	
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	MainFrame parentFrame;
+	NetworkGraph netGraph;
+	
+	JPanel netPnl, controlPanel, reportPanel;
+	ScalingControl scaler = new CrossoverScalingControl();
+	VisualizationViewer<GraphNode, GraphEdge> vv;
+	DefaultModalGraphMouse<GraphNode, GraphEdge> graphMouse;
+	
+	
+	public void repaint()
+	{
+		super.repaint();
+		for(Component c: this.getComponents())
+			c.repaint();
+	}
+	
+	
+	public NetworkPanel(MainFrame frame) {
+		this.parentFrame = frame;
+		frame.add(this);
+		frame.setContentPane(this);
+		
+		
+		TitledBorder titledBorder;
+		Color panelsBGColor = new Color(210, 210, 210);
+		Border blackline = BorderFactory.createLineBorder(Color.black);
+		Border raisedbevel = BorderFactory.createRaisedBevelBorder();
+		
+		{ //Initializing the panel for network visualization
+			netPnl = new JPanel();
+			netPnl.setSize(700, 640);
+			titledBorder = BorderFactory.createTitledBorder(blackline, "Network");
+			titledBorder.setTitleFont(titledBorder.getTitleFont().deriveFont(14.0f));
+			netPnl.setBorder(BorderFactory.createCompoundBorder(raisedbevel, titledBorder));
+			netPnl.setBackground(panelsBGColor);
+			this.add(netPnl);
+		}
+
+		this.setLayout(null);
+		
+		{ //Initializing the panel for controlling the network 
+			controlPanel = new JPanel();
+			titledBorder = BorderFactory.createTitledBorder(blackline, "Controls");
+			titledBorder.setTitleFont(titledBorder.getTitleFont().deriveFont(14.0f));
+			controlPanel.setBounds(700, 00, 280, 200);
+			controlPanel.setBackground(panelsBGColor);
+			controlPanel.setBorder(BorderFactory.createCompoundBorder(raisedbevel,
+					titledBorder));
+			this.add(controlPanel);
+		}
+		
+		{ //Initializing the panel for displaying reports
+			reportPanel = new JPanel();
+			titledBorder = BorderFactory.createTitledBorder(blackline, "Reports");
+			titledBorder.setTitleFont(titledBorder.getTitleFont().deriveFont(14.0f));
+			reportPanel.setBounds(700, 200, 280, 440);
+			reportPanel.setBackground(panelsBGColor);
+			reportPanel.setBorder(BorderFactory.createCompoundBorder(raisedbevel, titledBorder));
+			this.add(reportPanel);
+		}
+
+		initControlPanel(controlPanel);
+	}
+
+	public void initControlPanel(JPanel controlPanel) {
+		controlPanel.setLayout(null);
+		Border blackline = BorderFactory.createLineBorder(Color.black);
+
+		{
+			JLabel zoomLabel = new JLabel();
+			TitledBorder titledBorder = BorderFactory.createTitledBorder(
+					blackline, "Zoom");
+			zoomLabel.setBorder(titledBorder);
+			zoomLabel.setBounds(20, 30, 100, 50);
+
+			controlPanel.add(zoomLabel);
+
+			Button zoomIn = new Button("+");
+			zoomIn.setBounds(20, 20, 20, 20);
+			zoomLabel.add(zoomIn);
+			zoomIn.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					scaler.scale(vv, 1.1f, vv.getCenter());
+				}
+			});
+
+			Button zoomOut = new Button("-");
+			zoomOut.setBounds(60, 20, 20, 20);
+			zoomLabel.add(zoomOut);
+			zoomOut.addActionListener(new ActionListener() {
+				
+				@Override
+				public void actionPerformed(ActionEvent e) {
+					scaler.scale(vv, 1/1.1f, vv.getCenter());
+				}
+			});
+
+			Choice combo = new Choice();
+			combo.add("Transforming");
+			combo.add("Picking");
+			combo.setEnabled(true);
+			combo.addItemListener(new ItemListener() {
+				
+				@Override
+				public void itemStateChanged(ItemEvent arg0) {
+					if(arg0.getItem().equals("Transforming"))
+					{
+						graphMouse.setMode(ModalGraphMouse.Mode.TRANSFORMING);
+					}
+					else
+					{
+						graphMouse.setMode(ModalGraphMouse.Mode.PICKING);
+					}
+				}
+			});
+
+			combo.setBounds(150, 50, 100, 40);
+			controlPanel.add(combo);
+		}
+
+		{
+			JLabel hideLinksLabel = new JLabel();
+			TitledBorder titledBorder = BorderFactory.createTitledBorder(
+					blackline, "Hide links with weights");
+			hideLinksLabel.setBorder(titledBorder);
+			
+			hideLinksLabel.setBounds(20, 90, 240, 60);
+			controlPanel.add(hideLinksLabel);
+			
+			Choice combo = new Choice();
+			combo.add("Less than");
+			combo.add("Greater than");
+			combo.setEnabled(true);
+			
+			combo.setBounds(20, 25, 100, 40);
+			hideLinksLabel.add(combo);
+
+			TextField thresholdTextBox = new TextField("0");
+			thresholdTextBox.setBounds(135, 25, 30, 20);
+			hideLinksLabel.add(thresholdTextBox);
+			
+			Button applyBtn = new Button("Apply");
+			applyBtn.setBounds(180, 25, 40, 20);
+			hideLinksLabel.add(applyBtn);
+			
+			
+			applyBtn.addActionListener(new MyActionListener(thresholdTextBox, this, combo));
+		}
+		
+		Button resetBtn = new Button("Reset graph");
+		resetBtn.setBounds(150, 165, 100, 20);
+		controlPanel.add(resetBtn);
+		resetBtn.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				netGraph.buildNetwork();
+				loadGraph();
+			}
+		});
+	}
+	
+	//This method visualizes the graph
+	public void loadGraph()
+	{
+		CircleLayout<GraphNode, GraphEdge> layout = new CircleLayout<GraphNode, GraphEdge>(netGraph.getGraph());
+
+		// Sets the initial size of the space
+		layout.setSize(new Dimension(400, 400));
+
+		
+		vv= new VisualizationViewer<GraphNode, GraphEdge>(layout);
+
+		vv.getRenderContext().setVertexLabelTransformer(new ToStringLabeller<GraphNode>());
+		vv.getRenderContext().setEdgeLabelTransformer(new ToStringLabeller<GraphEdge>()
+				{
+			public String transform(GraphEdge edge)
+			{
+				return edge.getLabel(3);
+			}
+				});
+		Transformer<GraphNode, Paint> vertexPaint = new Transformer<GraphNode, Paint>() {
+			@Override
+			public Paint transform(GraphNode gn) {
+				if (gn.getType()== 1) 
+					return Color.BLUE;
+				else if (gn.getType() == 3)
+					return gn.getColor();
+				else
+					return Color.RED;
+			}
+		};
+		vv.getRenderContext().setVertexFillPaintTransformer(vertexPaint);
+
+
+		JScrollPane jsp = new JScrollPane(vv, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+		jsp.add(vv);
+		vv.scaleToLayout(scaler);
+		
+		graphMouse = new DefaultModalGraphMouse<GraphNode, GraphEdge>();
+		vv.setGraphMouse(graphMouse);
+		vv.addKeyListener(graphMouse.getModeKeyListener());
+
+		jsp.setViewportView(vv);
+		jsp.setBounds(30, 30, 640, 600);
+		jsp.setVisible(true);
+		this.netPnl.setLayout(null);
+		this.netPnl.add(jsp);
+		this.revalidate();
+		this.repaint();
+	}
+	
+	//This method applies link weight thresholds
+	public void hideLinks(double threshold, int operator)
+	{
+		netGraph.hideLinks(threshold, operator);
+	}
+	
+	//This method prints what kind of report is being displayed in the report panel
+	private void printReportTitle(String measure)
+	{
+		JLabel title = new JLabel(measure);
+		title.setBounds(2,2,200, 40);
+		title.setSize(200, 40);
+		title.setForeground(Color.darkGray);
+		this.reportPanel.add(title);
+	}
+	
+	//This method would call appropriate functions to calculate different centrality measures and displays the reports
+	public void calculateMetric(MetricType metric)
+	{
+		if (this.netGraph != null) {
+			ReportPanel reportPnl;
+			MetricFinder mf;
+			switch (metric) {
+			case BETWEENNESS:
+				this.resetComponents();
+				printReportTitle("Betweenness");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.BETWEENNESS, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findBetweenness(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			case CLOSENESS:
+				this.resetComponents();
+				printReportTitle("Closeness");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.CLOSENESS, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findCloseness(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			case DEGREE:
+				this.resetComponents();
+				printReportTitle("Degree");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.DEGREE, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findDegree(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			case EIGENVECTOR:
+				this.resetComponents();
+				printReportTitle("Eigenvector");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.EIGENVECTOR, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findEigenvector(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			//Shermin: Added a new case for authority	
+			case AUTHORITY:
+				this.resetComponents();
+				printReportTitle("Authority");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.AUTHORITY, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findAuthority(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			//Shermin: Added a new case for hub	
+			case HUB:
+				this.resetComponents();
+				printReportTitle("Hub");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.HUB, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findHub(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			case CLUSTERING_COEF:
+				this.resetComponents();
+				printReportTitle("Clustering Coefficient");
+				mf = new MetricFinder();
+				reportPnl = new ReportPanel(MetricType.CLUSTERING_COEF, mf, parentFrame);
+				reportPnl.printMetricReport(mf.findClusteringCoeff(this.netGraph.getGraph()));
+				this.reportPanel.add(reportPnl);
+				break;
+			}
+		}
+	}
+	
+	public void resetComponents()
+	{
+		Component[] components = this.reportPanel.getComponents();
+		for(int i = 0; i < components.length; i++)
+			this.reportPanel.remove(components[i]);
+	}
+	
+	public void findStructurallyEquivalents()
+	{
+		this.resetComponents();
+		printReportTitle("Structurally Equivalents");
+		MetricFinder mf = new MetricFinder();
+		ReportPanel reportPnl = new ReportPanel(MetricType.STRUCT_EQ, mf, parentFrame);
+		reportPnl.printEquivalentsReport(mf.findStructurallyEQ(this.netGraph.getGraph()), netGraph.getGraph().getVertexCount());
+		this.reportPanel.add(reportPnl);
+	}
+	
+	public void calculateDensity()
+	{
+		this.resetComponents();
+		printReportTitle("Graph Density");
+		MetricFinder mf = new MetricFinder();
+		ReportPanel reportPnl = new ReportPanel(MetricType.DENSITY, mf, parentFrame);
+		reportPnl.printDensityReport(mf.findDensity(this.netGraph.getNetwork()));
+		this.reportPanel.add(reportPnl);
+	}
+	
+	public void cluster(int type)
+	{
+		switch(type)
+		{
+		case 1:
+			new CommunityDetection().modularityCluster(this.netGraph.getGraph());
+			break;
+		case 2:
+			new CommunityDetection().betweennessCluster(this.netGraph.getGraph());
+			break;
+		case 3:
+			new CommunityDetection().voltageCluster(this.netGraph.getGraph());
+			break;
+		case 4:
+			new CommunityDetection().mstCluster(this.netGraph.getGraph());
+			break;
+		}
+		this.revalidate();
+		this.repaint();
+	}
+	
+	public void searchMetrics()
+	{
+		SearchMetricFrame smf = new SearchMetricFrame(parentFrame);
+		smf.init();
+		
+	}
+	public void showSearchResults(SearchMetricFrame smf)
+	{
+		this.resetComponents();
+		printReportTitle("Search results");  //Show the metric type too!
+		ReportPanel reportPnl = new ReportPanel(MetricType.DEGREE, new MetricFinder(), parentFrame);
+		reportPnl.printMetricReport(smf.result);
+		this.reportPanel.add(reportPnl);
+		this.revalidate();
+		this.repaint();
+	}
+}
+
+class MyActionListener implements ActionListener
+{
+	TextField txtField;
+	NetworkPanel networkPnl;
+	Choice combo;
+	MyActionListener(TextField txtField, NetworkPanel pnl, Choice combo)
+	{
+		this.txtField = txtField;
+		this.networkPnl = pnl;
+		this.combo = combo;
+	}
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		try
+		{
+			int operator = combo.getSelectedItem() == "Less than" ? 0 : 1;
+			networkPnl.hideLinks(Double.parseDouble(txtField.getText()), operator);
+			networkPnl.loadGraph();
+//			networkPnl.netPnl.revalidate();
+//			networkPnl.netPnl.repaint();
+			networkPnl.revalidate();
+			networkPnl.repaint();
+		}catch(NumberFormatException exp){
+			int operator = 0;
+			networkPnl.hideLinks(0, operator);
+			txtField.setText("");
+			networkPnl.repaint();
+		}
+	}
+}

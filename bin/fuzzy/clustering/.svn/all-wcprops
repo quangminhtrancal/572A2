@@ -1,0 +1,95 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering
+END
+AdaptedKMeans.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/AdaptedKMeans.java
+END
+MOGAClusteringFitnessEvaluator.java
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/MOGAClusteringFitnessEvaluator.java
+END
+BenchmarkedKMeans.java
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/BenchmarkedKMeans.java
+END
+IntRandomRange.java
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/IntRandomRange.java
+END
+KMeans.java
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/KMeans.java
+END
+Test.java
+K 25
+svn:wc:ra_dav:version-url
+V 74
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/Test.java
+END
+KMeansCluster.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/KMeansCluster.java
+END
+BasicKMeans.java
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/BasicKMeans.java
+END
+ConcurrentKMeans.java
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/ConcurrentKMeans.java
+END
+Cluster.java
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/Cluster.java
+END
+MOGAClustering.java
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/MOGAClustering.java
+END
+KMeansListener.java
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/KMeansListener.java
+END
+MOGAClusteringFitnessFunction.java
+K 25
+svn:wc:ra_dav:version-url
+V 99
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/MOGAClusteringFitnessFunction.java
+END
+KMeansFrame.java
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/KMeansFrame.java
+END
+InsufficientMemoryException.java
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/courses/c59901/!svn/ver/357/NetDriller/src/fuzzy/clustering/InsufficientMemoryException.java
+END

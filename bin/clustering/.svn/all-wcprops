@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 58
+/svn/courses/c59901/!svn/ver/356/NetDriller/src/clustering
+END
+ModularityClusterer.java
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/svn/courses/c59901/!svn/ver/363/NetDriller/src/clustering/ModularityClusterer.java
+END
+CommunityDetection.java
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/courses/c59901/!svn/ver/372/NetDriller/src/clustering/CommunityDetection.java
+END
+WEdgeBetweennessClusterer.java
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/courses/c59901/!svn/ver/363/NetDriller/src/clustering/WEdgeBetweennessClusterer.java
+END
+MstClusterer.java
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/courses/c59901/!svn/ver/356/NetDriller/src/clustering/MstClusterer.java
+END
